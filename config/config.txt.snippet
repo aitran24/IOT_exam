@@ -1,0 +1,6 @@
+dtparam=spi=on
+dtoverlay=mipi-dbi-spi,spi0-0,speed=32000000
+dtparam=width=320,height=240
+dtparam=reset-gpio=6,dc-gpio=5
+dtparam=compatible=st7789\0panel-mipi-dbi-spi
+dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=1000000,pmax=255,xohms=100,swapxy=1,invy=1
