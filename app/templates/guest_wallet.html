@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ví Photobooth Khách Hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #ff477e;
+            --primary-hover: #ff2a6d;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        .app-card {
+            background: var(--card-bg);
+            border-radius: 1.25rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+        }
+        .code-display {
+            font-size: 2.2rem;
+            letter-spacing: 0.35rem;
+            font-family: monospace;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #0284c7;
+            border: 2px dashed #ff477e;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            display: inline-block;
+        }
+        .btn-pink {
+            background: linear-gradient(135deg, #ff477e, #ff2a6d);
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease;
+        }
+        .btn-pink:hover {
+            background: linear-gradient(135deg, #ff2a6d, #d90429);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 71, 126, 0.3);
+        }
+        .btn-quick {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            transition: all 0.2s;
+        }
+        .btn-quick:hover, .btn-quick.active {
+            background: #fff1f2;
+            border-color: #ff477e;
+            color: #e11d48;
+            font-weight: 600;
+        }
+        .qr-wrapper {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 1rem;
+            display: inline-block;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+        .stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+        }
+        @keyframes pulse-success {
+            0% { transform: scale(0.98); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        .animate-celebrate {
+            animation: pulse-success 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="py-4">
+    <div class="container" style="max-width: 520px;">
+        <div class="text-center mb-4">
+            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 mb-2 px-3 py-2 fs-6">PHOTOBOOTH TỰ PHỤC VỤ</span>
+            <h1 class="h3 fw-bold text-dark">Ví Khách Không Cần App</h1>
+            <p class="text-muted small">Nạp tiền nhanh, dùng mã 8 ký tự để chụp tại máy</p>
+        </div>
+
+        <!-- Success Payment Alert -->
+        <div id="payment-success-alert" class="alert alert-success d-flex align-items-center mb-3 shadow-sm border-success border-opacity-25 animate-celebrate" style="display: none;">
+            <i class="bi bi-check-circle-fill fs-2 text-success me-3"></i>
+            <div>
+                <strong class="d-block text-success fs-5">🎉 THANH TOÁN THÀNH CÔNG!</strong>
+                <span class="small" id="payment-success-desc">Đã nạp tiền vào ví của bạn.</span>
+            </div>
+        </div>
+
+        <!-- Latest Photo Session Alert -->
+        <div id="photo-ready-alert" class="app-card p-4 text-center mb-4 border-danger border-opacity-50 animate-celebrate" style="display: none;">
+            <i class="bi bi-camera-fill text-danger display-4 mb-2"></i>
+            <h4 class="fw-bold text-dark">Ảnh Của Bạn Đã Sẵn Sàng!</h4>
+            <p class="text-muted small mb-3">Bạn vừa chụp xong một phiên ảnh tại máy Photobooth.</p>
+            <a id="btn-view-photos" href="#" class="btn btn-pink py-3 fs-5 shadow-sm w-100">
+                <i class="bi bi-images me-2"></i>Xem & Tải Ảnh Của Bạn Ngay
+            </a>
+        </div>
+
+        <div class="app-card p-4 mb-4" id="wallet-card">
+            <!-- If no wallet yet -->
+            <div id="no-wallet-section" class="text-center py-4">
+                <i class="bi bi-wallet2 text-danger display-3 mb-3"></i>
+                <h5 class="fw-bold text-dark mb-2">Bạn chưa có mã ví?</h5>
+                <p class="text-muted small mb-4">Bấm tạo ví mới để nhận ngay mã ví 8 ký tự. Mã này dùng được nhiều lần và tiền thừa sẽ được lưu lại!</p>
+                <button class="btn btn-pink w-100 py-3 fs-5" onclick="createNewWallet()">
+                    <i class="bi bi-plus-circle me-2"></i>Tạo Ví Mới Ngay
+                </button>
+                <div class="mt-4 pt-3 border-top border-secondary border-opacity-10">
+                    <p class="small text-muted mb-2">Hoặc bạn đã có mã ví trước đó?</p>
+                    <div class="input-group">
+                        <input type="text" id="existing-code-input" class="form-control text-uppercase text-center font-monospace" placeholder="Nhập mã 8 ký tự" maxlength="8">
+                        <button class="btn btn-outline-dark" onclick="loadExistingWallet()">Tra Cứu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- If wallet loaded -->
+            <div id="wallet-details-section" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-medium">MÃ VÍ CỦA BẠN:</span>
+                    <button class="btn btn-sm btn-link text-muted text-decoration-none p-0" onclick="switchWallet()">Đổi ví khác</button>
+                </div>
+
+                <!-- Balance Stats -->
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-6">
+                        <div class="p-3 stat-box">
+                            <span class="text-muted small d-block mb-1">Số dư khả dụng</span>
+                            <span class="fs-4 fw-bold text-success" id="disp-balance">0đ</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 stat-box">
+                            <span class="text-muted small d-block mb-1">Lượt chụp có sẵn</span>
+                            <span class="fs-4 fw-bold text-primary" id="disp-sessions">0 lượt</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STATE A: HAS SESSIONS (READY TO SHOOT AT BOOTH) -->
+                <div id="ready-to-shoot-card" class="p-3 rounded-3 bg-light border border-primary border-opacity-25 text-center mb-3" style="display: none;">
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 mb-2">
+                        <i class="bi bi-stars me-1"></i>SẴN SÀNG CHỤP TẠI MÁY
+                    </span>
+                    <h5 class="fw-bold text-dark mb-1">Mã Nhập Tại Máy Photobooth</h5>
+                    <div class="code-display my-2" id="ready-wallet-code">--------</div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill mb-3" onclick="copyWalletCode()">
+                            <i class="bi bi-clipboard me-1"></i>Sao chép mã
+                        </button>
+                    </div>
+
+                    <div class="p-2 bg-white rounded border d-inline-block mb-3">
+                        <div class="small text-muted mb-1">Hoặc quét mã này trước camera của máy:</div>
+                        <img id="ready-booth-qr" src="" alt="Wallet QR" style="width: 140px; height: 140px;" class="img-fluid">
+                    </div>
+
+                    <div class="text-start small text-muted border-top pt-2">
+                        <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle me-1 text-primary"></i>Hướng dẫn chụp:</div>
+                        <div>1. Chạm vào màn hình máy Photobooth.</div>
+                        <div>2. Chọn <b>"Khách vãng lai"</b> và nhập mã 8 ký tự trên (hoặc giơ mã QR trước camera).</div>
+                        <div>3. Bắt đầu chụp và nhận ảnh ngay!</div>
+                    </div>
+
+                    <div class="mt-3 text-center">
+                        <button class="btn btn-sm btn-link text-muted text-decoration-none" onclick="toggleTopupSection()">
+                            <i class="bi bi-plus-circle me-1"></i>Nạp thêm tiền vào ví
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STATE B: TOPUP SECTION (VIETQR) -->
+                <div id="topup-container">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-qr-code me-2"></i>Nạp tiền vào ví qua VietQR</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <button class="btn btn-quick w-100 active" onclick="selectTopupAmount(10000, this)">
+                                <div class="fw-bold">10.000đ</div>
+                                <small class="text-muted">5 lượt</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-quick w-100" onclick="selectTopupAmount(6000, this)">
+                                <div class="fw-bold">6.000đ</div>
+                                <small class="text-muted">3 lượt</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-quick w-100" onclick="selectTopupAmount(2000, this)">
+                                <div class="fw-bold">2.000đ</div>
+                                <small class="text-muted">1 lượt</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- VietQR Display -->
+                    <div id="qr-container" class="text-center my-3 p-3 bg-light rounded-3 border border-slate-200">
+                        <div class="qr-wrapper mb-2">
+                            <img id="qr-image" src="" alt="VietQR" class="img-fluid" style="width: 220px; height: 220px;">
+                        </div>
+                        <div class="small text-muted mb-2">
+                            <span>Ngân hàng: <b class="text-dark">{{ bank_name }}</b> | STK: <b class="text-dark font-monospace">{{ account_number }}</b></span>
+                        </div>
+                        <p class="small text-muted mb-1">Nội dung chuyển khoản (bắt buộc):</p>
+                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-6 px-3 py-2 font-monospace" id="transfer-content-text">PBW--------</div>
+                        <p class="small text-muted mt-2 mb-0">Mở app ngân hàng quét mã QR để nạp tiền tự động. Số dư sẽ tự cập nhật sau vài giây.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="text-center text-muted small">
+            <p><i class="bi bi-shield-check text-success me-1"></i>Bảo mật theo Luật BV Dữ liệu cá nhân 91/2025/QH15. Ảnh của khách web được lưu tối đa 24 giờ sau khi chụp.</p>
+        </div>
+    </div>
+
+    <script>
+        let currentCode = localStorage.getItem("pb_guest_wallet_code");
+        let selectedAmount = 10000;
+        let pollTimer = null;
+        let lastKnownBalance = null;
+        let topupManuallyOpened = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (currentCode) {
+                loadWalletInfo(currentCode);
+            }
+        });
+
+        async function createNewWallet() {
+            try {
+                const res = await fetch("/api/v1/wallets", { credentials: "same-origin", method: "POST" });
+                const data = await res.json();
+                if (data.wallet_code) {
+                    currentCode = data.wallet_code;
+                    localStorage.setItem("pb_guest_wallet_code", currentCode);
+                    loadWalletInfo(currentCode);
+                }
+            } catch (err) {
+                alert("Không thể tạo ví, vui lòng thử lại: " + err);
+            }
+        }
+
+        function loadExistingWallet() {
+            const input = document.getElementById("existing-code-input").value.trim().toUpperCase();
+            if (input.length !== 8) {
+                alert("Mã ví gồm đúng 8 ký tự!");
+                return;
+            }
+            currentCode = input;
+            localStorage.setItem("pb_guest_wallet_code", currentCode);
+            loadWalletInfo(currentCode);
+        }
+
+        function switchWallet() {
+            if (pollTimer) clearInterval(pollTimer);
+            localStorage.removeItem("pb_guest_wallet_code");
+            currentCode = null;
+            lastKnownBalance = null;
+            document.getElementById("no-wallet-section").style.display = "block";
+            document.getElementById("wallet-details-section").style.display = "none";
+            document.getElementById("payment-success-alert").style.display = "none";
+            document.getElementById("photo-ready-alert").style.display = "none";
+        }
+
+        function toggleTopupSection() {
+            const topup = document.getElementById("topup-container");
+            topupManuallyOpened = !topupManuallyOpened;
+            topup.style.display = topupManuallyOpened ? "block" : "none";
+        }
+
+        async function loadWalletInfo(code) {
+            try {
+                const res = await fetch(`/api/v1/wallets/${code}`);
+                if (!res.ok) {
+                    alert("Không tìm thấy ví với mã này!");
+                    switchWallet();
+                    return;
+                }
+                const data = await res.json();
+                document.getElementById("no-wallet-section").style.display = "none";
+                document.getElementById("wallet-details-section").style.display = "block";
+                
+                applyWalletData(data);
+                loadQR(code, selectedAmount);
+                
+                // Start polling every 2.5 seconds
+                if (pollTimer) clearInterval(pollTimer);
+                pollTimer = setInterval(() => pollBalance(code), 2500);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function applyWalletData(data) {
+            document.getElementById("disp-balance").innerText = Number(data.available_vnd).toLocaleString() + "đ";
+            document.getElementById("disp-sessions").innerText = data.sessions_available + " lượt";
+            
+            // Check if payment was just completed
+            if (lastKnownBalance !== null && data.available_vnd > lastKnownBalance) {
+                const diff = data.available_vnd - lastKnownBalance;
+                const alertBox = document.getElementById("payment-success-alert");
+                document.getElementById("payment-success-desc").innerText = `Đã nhận thành công +${Number(diff).toLocaleString()}đ. Bạn đang có ${data.sessions_available} lượt chụp!`;
+                alertBox.style.display = "flex";
+                topupManuallyOpened = false;
+            }
+            lastKnownBalance = data.available_vnd;
+
+            // Check if there are sessions available
+            const readyCard = document.getElementById("ready-to-shoot-card");
+            const topupContainer = document.getElementById("topup-container");
+            
+            if (data.sessions_available > 0) {
+                readyCard.style.display = "block";
+                document.getElementById("ready-wallet-code").innerText = data.wallet_code;
+                if (data.wallet_qr_url) {
+                    document.getElementById("ready-booth-qr").src = data.wallet_qr_url;
+                }
+                if (!topupManuallyOpened) {
+                    topupContainer.style.display = "none";
+                }
+            } else {
+                readyCard.style.display = "none";
+                topupContainer.style.display = "block";
+            }
+
+            // Check if latest session photo is ready to view
+            const photoAlert = document.getElementById("photo-ready-alert");
+            if (data.latest_session && data.latest_session.share_url) {
+                photoAlert.style.display = "block";
+                document.getElementById("btn-view-photos").href = data.latest_session.share_url;
+            } else {
+                photoAlert.style.display = "none";
+            }
+        }
+
+        async function pollBalance(code) {
+            try {
+                const res = await fetch(`/api/v1/wallets/${code}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    applyWalletData(data);
+                }
+            } catch (e) {}
+        }
+
+        async function loadQR(code, amount) {
+            try {
+                const res = await fetch(`/api/v1/wallets/${code}/qr?amount=${amount}`);
+                const data = await res.json();
+                document.getElementById("qr-image").src = data.qr_image_url;
+                document.getElementById("transfer-content-text").innerText = data.transfer_content;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function selectTopupAmount(amt, btn) {
+            document.querySelectorAll(".btn-quick").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            selectedAmount = amt;
+            if (currentCode) {
+                loadQR(currentCode, selectedAmount);
+            }
+        }
+
+        function copyWalletCode() {
+            if (currentCode) {
+                navigator.clipboard.writeText(currentCode);
+                alert("Đã sao chép mã ví: " + currentCode);
+            }
+        }
+    </script>
+</body>
+</html>

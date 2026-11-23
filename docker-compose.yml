@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: photobooth-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-photobooth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photobooth_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-photobooth}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-photobooth}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - photobooth-net
+
+  api:
+    build: .
+    container_name: photobooth-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENV: production
+      DEBUG: "False"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-photobooth}:${POSTGRES_PASSWORD:-photobooth_secure_password_2026}@db:5432/${POSTGRES_DB:-photobooth}
+      BASE_URL: https://${DOMAIN:-booth.tenclb.vn}
+      MEDIA_BASE_URL: https://${DOMAIN:-booth.tenclb.vn}
+      AES_MASTER_KEY: ${AES_MASTER_KEY}
+      HMAC_PEPPER_KEY: ${HMAC_PEPPER_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SEPAY_API_KEY: ${SEPAY_API_KEY}
+      BANK_NAME: ${BANK_NAME:-MB Bank}
+      BANK_BIN: ${BANK_BIN:-970422}
+      ACCOUNT_NUMBER: ${ACCOUNT_NUMBER:-0123456789}
+      ACCOUNT_NAME: ${ACCOUNT_NAME:-CLB PHOTOBOOTH}
+      STORAGE_DIR: /app/storage
+    volumes:
+      - photo_storage:/app/storage
+    networks:
+      - photobooth-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: photobooth-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-booth.tenclb.vn}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    networks:
+      - photobooth-net
+
+volumes:
+  postgres_data:
+  photo_storage:
+  caddy_data:
+  caddy_config:
+
+networks:
+  photobooth-net:
+    driver: bridge
